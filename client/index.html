@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Чат на WebSocket</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .chat-container {
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      width: 100%;
+      height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #chat {
+      padding: 15px;
+      flex-grow: 1;
+      overflow-y: auto;
+      background-color: #e9ebee;
+      display: flex;
+      flex-direction: column;
+      gap: 10px; /* Промежуток между сообщениями */
+    }
+
+    .message {
+      max-width: 70%; /* Максимальная ширина сообщения */
+      padding: 10px 15px;
+      border-radius: 15px;
+      color: white;
+      overflow-wrap: break-word; /* Перенос длинных слов */
+    }
+
+    .my-message {
+      background-color: #007bff; /* Ваши сообщения */
+      align-self: flex-end; /* Выравнивание вправо */
+    }
+
+    .other-message {
+      background-color: #28a745; /* Сообщения оппонента */
+      align-self: flex-start; /* Выравнивание влево */
+    }
+
+    .chat-input {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ddd;
+      background-color: #ffffff;
+    }
+
+    #messageInput {
+      flex-grow: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      font-size: 16px;
+      outline: none;
+      margin-right: 10px;
+    }
+
+    #messageInput:focus {
+      border-color: #007bff;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div id="chat"></div>
+    <div class="chat-input">
+      <input type="text" id="messageInput" placeholder="Введите сообщение...">
+      <button onclick="sendMessage()">Отправить</button>
+    </div>
+  </div>
+
+  <script>
+    const username = prompt("Введите ваше имя:"); // Запрашиваем имя пользователя
+    const ws = new WebSocket('ws://localhost:8080');
+
+    ws.onopen = () => console.log('Подключено к серверу');
+
+    ws.onmessage = async (event) => {
+      const messageData = JSON.parse(await event.data.text());
+      const chat = document.getElementById('chat');
+      
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message'); // Общий класс для всех сообщений
+
+      // Различные стили для сообщений
+      if (messageData.username === username) {
+        messageElement.classList.add('my-message'); // Класс для ваших сообщений
+      } else {
+        messageElement.classList.add('other-message'); // Класс для сообщений оппонента
+      }
+
+      messageElement.textContent = `${messageData.username}: ${messageData.text}`;
+      chat.appendChild(messageElement);
+      chat.scrollTop = chat.scrollHeight; // Прокручиваем вниз
+    };
+
+    ws.onclose = () => console.log('Соединение закрыто');
+
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      if (input.value.trim()) {
+        const messageData = {
+          username: username,
+          text: input.value
+        };
+        ws.send(JSON.stringify(messageData)); // Отправляем объект с текстом и именем пользователя
+        input.value = '';
+      }
+    }
+  </script>
+</body>
+</html>
